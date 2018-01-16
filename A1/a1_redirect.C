@@ -10,7 +10,8 @@ int main()
 {
     printf("First :print to stdout\n");
     
-    freopen("redirect_out.txt", "w", stdout); 
+    freopen("redirect_out.txt", "w", stdout); //of file = open() 
+    //dup2(file,2) etc...???
     printf("Second : Print to redirect_out.txt\n");
     freopen( "CON", "w", stdout );
     printf("Third: Print to stdout\n");
