@@ -9,9 +9,12 @@
 int main()
 {
     printf("First :print to stdout\n");
+    
+    freopen("redirect_out.txt", "w", stdout); 
     printf("Second : Print to redirect_out.txt\n");
-    freopen("redirect_out.txt", "a+", stdout); 
+    freopen( "CON", "w", stdout );
     printf("Third: Print to stdout\n");
+
     return -1;
 }
     
