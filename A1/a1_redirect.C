@@ -9,11 +9,13 @@
 int main()
 {
     printf("First :print to stdout\n");
-    
-    freopen("redirect_out.txt", "w", stdout); //of file = open() 
+    int file = open("redirect_out.txt", O_WRONLY | O_APPEND);
+    dup2(file, 1) ; 
+    //freopen("redirect_out.txt", "w", stdout); //of file = open() 
     //dup2(file,2) etc...???
     printf("Second : Print to redirect_out.txt\n");
-    freopen( "CON", "w", stdout );
+    //freopen( "CON", "w", stdout );
+    
     printf("Third: Print to stdout\n");
 
     return -1;
