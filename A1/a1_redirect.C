@@ -7,7 +7,7 @@
 #include<stdio.h>
 #include<unistd.h>
 #include <fcntl.h> 
-#include <unistd.h> 
+
 int main()
 {
     printf("First :print to stdout\n");
