@@ -6,16 +6,18 @@
 
 #include<stdio.h>
 #include<unistd.h>
+#include <fcntl.h> 
+#include <unistd.h> 
 int main()
 {
     printf("First :print to stdout\n");
     int file = open("redirect_out.txt", O_WRONLY | O_APPEND);
+    int out=dup(1); // save stdout
     dup2(file, 1) ; 
-    //freopen("redirect_out.txt", "w", stdout); //of file = open() 
-    //dup2(file,2) etc...???
     printf("Second : Print to redirect_out.txt\n");
-    //freopen( "CON", "w", stdout );
-    
+    dup2(out, 1); // redirect output back to stdout
+	close(file);
+	close(out);
     printf("Third: Print to stdout\n");
 
     return -1;
