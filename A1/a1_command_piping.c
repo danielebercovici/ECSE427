@@ -18,7 +18,7 @@ int main(){
         //close(stdout);
         close(mypipe[0]); //close reading
         dup2(mypipe[1], 1);
-        char *argm[] = {"ls", "-la", 0}; 
+        char *argm[] = {"ls", "-la", 0};
         execvp(argm[0], argm);
         //execvp("ls", NULL);
     }
@@ -26,7 +26,7 @@ int main(){
         //parent : print output from ls here
         close(mypipe[1]); //close writing
         dup2(1, mypipe[0]);
-        
+        printf("%d", *mypipe);
     }
     return 0;
 }
