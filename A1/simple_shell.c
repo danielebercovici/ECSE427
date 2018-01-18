@@ -122,23 +122,7 @@ int getcmd(char *prompt, char *args[], int *background, int *redir, int *piping,
 		*redir = 0;
 
 	*piping = 0;
-	char *line_copy = line;
-	while ((token = strsep(&line_copy, " \t\n")) != NULL) {
-		for (int j = 0; j < strlen(token); j++)
-			if (token[j] <= 32)
-				token[j] = '\0';
-		if (strlen(token) > 0) {
-			if (strcmp(token, "|") == 0) {
-				*piping = 1;
-			} else {
-				if (*piping == 1) {
-					args2[k++] = strdup(token); // Second command (for piping)
-				} else {
-					args[i++] = strdup(token); // First command
-				}
-			}
-		}
-	}
+	
 	free(line);
 	args[i] = NULL;
 	args2[k] = NULL;
@@ -196,9 +180,7 @@ void executeCommand(int cnt, char *args[], int bg, int redir, int piping, char *
 						int signal_number = WTERMSIG(status);
 						char *signal = strsignal(signal_number);
 						// Child terminated by signal (not printed to enhance user experience)
-						if (WCOREDUMP(status)) {
-							printf("Child produced core dump\n");
-						}
+						
 					}
 					if (WIFSTOPPED(status)) {
 						int signal_number = 0;
@@ -329,20 +311,6 @@ void executeCommand(int cnt, char *args[], int bg, int redir, int piping, char *
 
 int main(void)
 {
-	if (signal(SIGINT, handlerSIGINT) == SIG_ERR) { // Handle Ctrl-C interrupt
-		printf("ERROR: Could not bind SIGINT signal handler\n");
-		exit(EXIT_FAILURE);
-	}
-
-	if (signal(SIGTSTP, SIG_IGN) == SIG_ERR) { // Ignore Ctrl-Z interrupt
-		printf("ERROR: Could not bind SIGTSTP signal handler\n");
-		exit(EXIT_FAILURE);
-	}
-
-	if (signal(SIGCHLD, handlerSIGCHLD) == SIG_ERR) { // Handle child interrupt
-		printf("ERROR: Could not bind SIGCHLD signal handler\n");
-		exit(EXIT_FAILURE);
-	}
 
 	char *args[MAX_ARGS], *args2[MAX_ARGS];
 	int bg, redir, piping;
