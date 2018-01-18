@@ -1,32 +1,30 @@
-#include<stdio.h>
-#include<unistd.h>
-#include <fcntl.h> 
+#include <unistd.h>
+#include <string.h>
 
-int main(){
-    int mypipe[2];
-     // Create the pipe. 
-     if (pipe (mypipe))
-    {
-      fprintf (stderr, "Pipe failed.\n");
-      return -1;
-    }
-    
-    if (fork()==0)
-    {
+int main()
+{
+   int mypipe[2];
+   pipe (mypipe);
 
-        //child : executed ls using execvp and redirect into input of pipe
-        //close(stdout);
-        close(mypipe[0]); //close reading
-        dup2(mypipe[1], 1);
-        char *argm[] = {"ls", "-la", 0};
-        execvp(argm[0], argm);
-        //execvp("ls", NULL);
-    }
-    else{
-        //parent : print output from ls here
-        close(mypipe[1]); //close writing
-        dup2(1, mypipe[0]);
-        printf("%d", *mypipe);
-    }
-    return 0;
+   if (fork() == 0)
+   {
+      close(mypipe[0]);
+      dup2(mypipe[1], 1);
+
+      char *argm[] = {"ls", "-la", 0};
+      execvp(argm[0], argm); //execute command ls
+   }
+   else
+   {
+      char buffer[1024] = {0};
+
+      close(mypipe[1]);
+
+      while (read(mypipe[0], buffer, sizeof(buffer)) != 0)
+      {
+         write(1, buffer, strlen(buffer));
+         memset (buffer, 0, sizeof(buffer));
+      }
+   }
+   return 0;
 }
