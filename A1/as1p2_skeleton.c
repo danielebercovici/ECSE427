@@ -6,8 +6,8 @@ and falls under the McGill code of conduct, to the best of my knowledge.
 */ 
 
 //Please enter your name and McGill ID below
-//Name: <your name>
-//McGill ID: <magic number>
+//Name: Daniele Bercovici
+//McGill ID: 260627845
 
 //all the header files you would require
 #include <stdio.h>  //for standard IO
@@ -18,6 +18,7 @@ and falls under the McGill code of conduct, to the best of my knowledge.
 #include <sys/wait.h>//for waitpid
 #include <fcntl.h>  //open function to open a file. type "man 2 open" in terminal
 #include <time.h>   //to handle time
+#include <dirent.h> //open directories
 
 //pointer to Linked list head
 struct node *head_job = NULL;
@@ -170,15 +171,29 @@ void waitForEmptyLL(int nice, int bg)
 //function to perform word count
  int wordCount(char *filename,char* flag)
  {
-     int cnt;
-     //if flag is l 
-     //count the number of lines in the file 
-     //set it in cnt
+     int cnt =0;
+     char ch;
+     FILE *fp;
+     fp = fopen(filename,"r");
 
-     //if flag is w
-     //count the number of words in the file
-     //set it in cnt
 
+     
+     if ( fp )
+   {
+	//Repeat until End Of File character is reached.	
+	   while ((ch=getc(fp)) != EOF) {		
+            //if flag is l 
+            //count the number of lines in the file 
+            //set it in cnt
+		   if (ch == '\n' && strcmp(flag, "l") == 0) { ++cnt;}  
+           //if flag is w
+           //count the number of words in the file
+           //set it in cnt
+		   else if ((ch == ' ' || ch == '\n') && strcmp(flag, "w") == 0) { ++cnt; }
+	   }
+    }
+   else{printf("Failed to open the file\n");}
+  
      return cnt;
  }
 
@@ -315,7 +330,7 @@ int main(void)
         else if (!strcmp("exit", args[0]))
         {
             //exit the execution of endless while loop 
-            exit(0);
+		    exit(EXIT_SUCCESS);
         }
         else if (!strcmp("fg", args[0]))
         {
@@ -327,22 +342,38 @@ int main(void)
             int result = 0;
             // if no destination directory given 
             // change to home directory 
-
+            if (cnt == 1){
+                printf("No directory specified.\n");
+                chdir(getenv("HOME"));
+            }  
             //if given directory does not exist
             //print directory does not exit
-
             //if everthing is fine 
             //change to destination directory 
+            else{DIR* dir = opendir(args[1]);
+            if (dir){
+                //directory exists
+                closedir(dir);
+                chdir(args[1]);    
+            }
+            else
+                //directory doesnt exists
+                printf("Directory does not exist");
+            }
+
         }
         else if (!strcmp("pwd", args[0]))
         {
-            //use getcwd and print the current working directory
+            //print the current working directory
+            char cwd[1024];
+		    getcwd(cwd, sizeof(cwd));
+		    printf("%s", cwd);
             
         }
         else if(!strcmp("wc",args[0]))
         {
             //call the word count function
-            wordCount(args[2],args[1]);
+            printf("%i",wordCount(args[2],args[1]));
         }
         else
         {
@@ -394,6 +425,7 @@ int main(void)
                 //if redirection is enabled
                 if (isred == 1)
                 {
+                    int i =0; //<--- TODO:::::: to get rid of error aka whats i??
                     //open file and change output from stdout to that  
                     //make sure you use all the read write exec authorisation flags
                     //while you use open (man 2 open) to open file
