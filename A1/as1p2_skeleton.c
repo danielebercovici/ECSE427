@@ -248,6 +248,17 @@ int getcmd(char *prompt, char *args[], int *background, int *nice)
     }
     else
         *background = 0;
+    //check for redirection
+    //now you know what does args store
+    //check if args has ">"
+    //if yes set isred to 1
+    //else set isred to 0
+	if ((loc = strchr(line, '>')) != NULL) {
+
+		isred = 1;
+		*loc = ' ';
+	} else
+		isred = 0;
     while ((token = strsep(&line, " \t\n")) != NULL)
     {
         for (int j = 0; j < strlen(token); j++)
@@ -265,6 +276,8 @@ int getcmd(char *prompt, char *args[], int *background, int *nice)
             }
         }
     }
+    free(line);
+    args[i] = NULL;
     return i;
 }
 
@@ -421,14 +434,7 @@ int main(void)
 
                 //introducing augmented delay
                 performAugmentedWait();
-
-                //check for redirection
-                //now you know what does args store
-                //check if args has ">"
-                //if yes set isred to 1
-                //else set isred to 0
-
-                //if redirection is enabled
+                
                 if (isred == 1) {
 				    if (cnt < 2) {
 					    printf("No output file specified\n");
