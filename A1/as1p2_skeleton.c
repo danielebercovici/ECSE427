@@ -29,7 +29,7 @@ struct node *current_job = NULL;
 //global variable used to store process id of process
 //that has been just created
 //can be used while adding a job to linked list
-pid_t process_id;
+pid_t process_id, foreground_pid, background_pids[100];
 
 //flag variable to check if redirection of output is required
 int isred = 0;
@@ -175,9 +175,6 @@ void waitForEmptyLL(int nice, int bg)
      char ch;
      FILE *fp;
      fp = fopen(filename,"r");
-
-
-     
      if ( fp )
    {
 	//Repeat until End Of File character is reached.	
@@ -396,13 +393,22 @@ int main(void)
             {
                 //we are inside parent
                 //printf("inside the parent\n");
-                if (bg == 0)
-                {
+                if (bg == 0){
                     //FOREGROUND
+                    foreground_pid = pid;
                     // waitpid with proper argument required
+                    int status = 0;
+                    if (waitpid(pid, &status, 0) == pid) { 
+					    foreground_pid = 0;
+					    if (status != 0) {
+						    // Error while waiting for child 
+					    }
+				    } else {
+					foreground_pid = 0;
+					perror("Error while waiting for child");
+				    }   
                 }
-                else
-                {
+                else{
                     //BACKGROUND
                     process_id = pid;
                     addToJobList(args);
@@ -423,23 +429,37 @@ int main(void)
                 //else set isred to 0
 
                 //if redirection is enabled
-                if (isred == 1)
-                {
-                    int i =0; //<--- TODO:::::: to get rid of error aka whats i??
-                    //open file and change output from stdout to that  
-                    //make sure you use all the read write exec authorisation flags
-                    //while you use open (man 2 open) to open file
+                if (isred == 1) {
+				    if (cnt < 2) {
+					    printf("No output file specified\n");
+					    exit(EXIT_FAILURE);
+				    }
+				    close(1);
+				    for (int i = 0; i < 100; i++) { //max args set to 100
+					    if (args[i] == NULL) {
+						    open(args[i - 1], O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); // Default Linux permissions
+						    args[i - 1] = NULL;
+						    break;
+					    }
+				    }   
+			    }
+                // if (isred == 1)
+                // {
+                //     int i =0; //<--- TODO:::::: to get rid of error aka whats i??
+                //     //open file and change output from stdout to that  
+                //     //make sure you use all the read write exec authorisation flags
+                //     //while you use open (man 2 open) to open file
 
-                    //set ">" and redirected filename to NULL
-                    args[i] = NULL;
-                    args[i + 1] = NULL;
+                //     //set ">" and redirected filename to NULL
+                //     args[i] = NULL;
+                //     args[i + 1] = NULL;
 
-                    //run your command
-                    execvp(args[0], args);
+                //     //run your command
+                //     execvp(args[0], args);
 
-                    //restore to stdout
-                    fflush(stdout);
-                }
+                //     //restore to stdout
+                //     fflush(stdout);
+                // }
                 else
                 {
                     //simply execute the command.
