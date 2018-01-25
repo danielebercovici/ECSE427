@@ -73,21 +73,28 @@ void addToJobList(char *args[])
     else
     {
         //point current_job to head_job
-        current_job->next = head_job; //???????
+        current_job->next = head_job; //????? TODO:::::_________________________________________________________________
         //traverse the linked list to reach the last job
-       
-
+        int num = 1; //job number
+        while(current_job !=NULL){
+            current_job = current_job->next;
+            ++num;
+        }
+        //______________________________________________________________________________________________________________
 
 
         //init all values of the job like above num,pid,cmd,spawn
-        
+        job->number = num;
+        job->pid = process_id;
+        job->cmd = args[0];
+        job->spawn = (unsigned int)time(NULL);
         
         //make next of current_job point to job
-        
+        current_job->next = job;
         //make job to be current_job
-        
+        job = current_job;
         //set the next of job to be NULL
-        
+        job->next = NULL;
     }
 }
 
@@ -116,15 +123,18 @@ void refreshJobList()
         //one of the below needs node removal from linked list
         if (ret_pid == 0)
         {
-            //what does this mean
-            //do the needful
+            //__________________________________________________________________
+            //what does this mean : child status not changed????
+            //do the needful : remove node???
+            current_job->next = current_job->next->next;
+            prev_job->next = current_job->next;
             
         }
         else
         {
             //what does this mean
             //do the needful
-            
+            //_________________________________________________________________
         }
     }
     return;
@@ -140,7 +150,7 @@ void listAllJobs()
     refreshJobList();
 
     //init current_job with head_job
-
+    current_job=head_job;
     //heading row print only once.
     printf("\nID\tPID\tCmd\tstatus\tspawn-time\n");
         
@@ -205,8 +215,45 @@ void performAugmentedWait()
     printf("sleeping for %d\n", w);
     rem = sleep(w);
     return;
+
+    /*		if (cnt == 1)
+			printf("No background job specified.\n");
+		else {
+			int selected_job = atoi(args[1]);
+			if (selected_job < 1 || background_pids[selected_job - 1] == 0) {
+				printf("Invalid job number.\n");
+			} else {
+				foreground_pid = background_pids[selected_job - 1];
+				int status = 0;
+				waitpid(foreground_pid, &status, 0); // Wait for child
+				foreground_pid = 0;
+				background_pids[selected_job - 1] = 0;
+				free(background_commands[selected_job - 1]);
+				background_commands[selected_job - 1] = NULL;
+				if (status != 0) {
+					if (WIFEXITED(status)) {
+						int exit_status = WEXITSTATUS(status);
+						printf("Child terminated normally (exit status %d)\n", exit_status);
+					}
+					if (WIFSIGNALED(status)) {
+						int signal_number = WTERMSIG(status);
+						char *signal = strsignal(signal_number);
+						// Child terminated by signal (not printed to enhance user experience)
+						
+					}
+					if (WIFSTOPPED(status)) {
+						int signal_number = 0;
+						printf("Child stopped by delivery of signal #%d\n", signal_number);
+					}
+					if (WIFCONTINUED(status)) {
+						printf("Child process was resumed by delivery of SIGCONT\n");
+					}
+				}
+			}
+		}*/
 }
 
+//______________________________________________________________________________
 //simulates running process to foreground
 //by making the parent process wait for
 //a particular process id.
@@ -224,6 +271,7 @@ int waitforjob(char *jobnc)
     
     return 0;
 }
+//______________________________________________________________________________
 
 // splits whatever the user enters and sets the background/nice flag variable
 // and returns the number of tokens processed
@@ -409,25 +457,22 @@ int main(void)
                 //we are inside parent
                 //printf("inside the parent\n");
                 if (bg == 0){
-                    //FOREGROUND
-                    foreground_pid = pid;
+                    //FOREGROUND //parent wait for child ---------------------------------------------------------------------------
                     // waitpid with proper argument required
                     int status = 0;
                     if (waitpid(pid, &status, 0) == pid) { 
-					    foreground_pid = 0;
 					    if (status != 0) {
 						    // Error while waiting for child 
 					    }
 				    } else {
-					foreground_pid = 0;
 					perror("Error while waiting for child");
 				    }   
                 }
                 else{
-                    //BACKGROUND
+                    //BACKGROUND //parent need not wait
                     process_id = pid;
                     addToJobList(args);
-                    // waitpid with proper argument required
+                    // waitpid with proper argument required ----------------------------------------------------------------------------------
                 }
             }
             else
@@ -437,37 +482,42 @@ int main(void)
                 //introducing augmented delay
                 performAugmentedWait();
                 
-                if (isred == 1) {
-				    if (cnt < 2) {
-					    printf("No output file specified\n");
-					    exit(EXIT_FAILURE);
-				    }
-				    close(1);
-				    for (int i = 0; i < 100; i++) { //max args set to 100
-					    if (args[i] == NULL) {
-						    open(args[i - 1], O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); // Default Linux permissions
-						    args[i - 1] = NULL;
-						    break;
-					    }
-				    }   
-			    }
-                // if (isred == 1)
-                // {
-                //     int i =0; //<--- TODO:::::: to get rid of error aka whats i??
-                //     //open file and change output from stdout to that  
-                //     //make sure you use all the read write exec authorisation flags
-                //     //while you use open (man 2 open) to open file
+                if (isred == 1)
+                {
+                    /*
+                    if (redir == 1) {
+				        if (cnt < 2) {
+					        printf("No output file specified\n");
+					        exit(EXIT_FAILURE);
+				        }
+				        close(1);
+				        for (int i = 0; i < MAX_ARGS; i++) {
+					        if (args[i] == NULL) {
+						        open(args[i - 1], O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); // Default Linux permissions
+						        args[i - 1] = NULL;
+						        break;
+					        }
+				        }
+			        }*/
+                    
+                    //open file and change output from stdout to that  
+                    int file = open(args[2], O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+                    int out=dup(1);
+                    dup2(file, 1) ; 
+                    //make sure you use all the read write exec authorisation flags
+                    //while you use open (man 2 open) to open file
 
-                //     //set ">" and redirected filename to NULL
-                //     args[i] = NULL;
-                //     args[i + 1] = NULL;
+                    //set ">" and redirected filename to NULL
+                    int i =1; 
+                    args[i] = NULL;
+                    args[i + 1] = NULL;
 
-                //     //run your command
-                //     execvp(args[0], args);
+                    //run your command
+                    execvp(args[0], args);
 
-                //     //restore to stdout
-                //     fflush(stdout);
-                // }
+                    //restore to stdout
+                    fflush(stdout);
+                }
                 else
                 {
                     //simply execute the command.
