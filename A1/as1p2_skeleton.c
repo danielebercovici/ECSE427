@@ -54,32 +54,32 @@ void addToJobList(char *args[])
     if (head_job == NULL)
     {
         //init the job number with 1
-        
+        job->number = 1;
         //set its pid from the global variable process_id
-        
+        job->pid = process_id;
         //cmd can be set to arg[0]
-        
+        job->cmd = args[0];
         //set the job->next to point to NULL.
-        
+        job->next = NULL;
         //set the job->spawn using time function
         job->spawn = (unsigned int)time(NULL);
         //set head_job to be the job
-        
+        head_job = job; 
         //set current_job to be head_job
-        
+        current_job = head_job;
     }
 
     //Otherwise create a new job node and link the current node to it
     else
     {
         //point current_job to head_job
-        
+        current_job->next = head_job; //???????
         //traverse the linked list to reach the last job
        
 
 
 
-        //init all values of the job like above num,pid,cmd.spawn
+        //init all values of the job like above num,pid,cmd,spawn
         
         
         //make next of current_job point to job
@@ -340,7 +340,7 @@ int main(void)
         else if (!strcmp("exit", args[0]))
         {
             //exit the execution of endless while loop 
-		    exit(EXIT_SUCCESS);
+		    exit(1);
         }
         else if (!strcmp("fg", args[0]))
         {
@@ -360,15 +360,17 @@ int main(void)
             //print directory does not exit
             //if everthing is fine 
             //change to destination directory 
-            else{DIR* dir = opendir(args[1]);
-            if (dir){
-                //directory exists
-                closedir(dir);
-                chdir(args[1]);    
-            }
-            else
-                //directory doesnt exists
-                printf("Directory does not exist");
+            else{
+                DIR* dir = opendir(args[1]);
+                if (dir){
+                    //directory exists
+                    closedir(dir);
+                    chdir(args[1]);    
+                }
+                else{
+                    //directory doesnt exists
+                    printf("Directory does not exist");
+                }
             }
 
         }
