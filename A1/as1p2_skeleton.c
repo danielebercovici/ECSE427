@@ -29,13 +29,13 @@ struct node *current_job = NULL;
 //global variable used to store process id of process
 //that has been just created
 //can be used while adding a job to linked list
-pid_t process_id, foreground_pid, background_pids[100];
+pid_t process_id;
 
 //flag variable to check if redirection of output is required
 int isred = 0;
 
 //structure of a single node
-//donot modify this structure
+//do not modify this structure
 struct node
 {
     int number;        //the job number
@@ -76,7 +76,7 @@ void addToJobList(char *args[])
         current_job->next = head_job; //????? TODO:::::_________________________________________________________________
         //traverse the linked list to reach the last job
         int num = 1; //job number
-        while(current_job !=NULL){
+        while(current_job->next !=NULL){
             current_job = current_job->next;
             ++num;
         }
@@ -96,6 +96,7 @@ void addToJobList(char *args[])
         //set the next of job to be NULL
         job->next = NULL;
     }
+    free(job);
 }
 
 //Function to refresh job list
