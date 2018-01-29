@@ -73,18 +73,15 @@ void addToJobList(char *args[])
     else
     {
         //point current_job to head_job
-        current_job->next = head_job; //????? TODO:::::_________________________________________________________________
+        current_job = head_job;
+
         //traverse the linked list to reach the last job
-        int num = 1; //job number
         while(current_job->next !=NULL){
             current_job = current_job->next;
-            ++num;
         }
-        //______________________________________________________________________________________________________________
-
 
         //init all values of the job like above num,pid,cmd,spawn
-        job->number = num;
+        job->number = current_job->number+1;
         job->pid = process_id;
         job->cmd = args[0];
         job->spawn = (unsigned int)time(NULL);
@@ -92,11 +89,11 @@ void addToJobList(char *args[])
         //make next of current_job point to job
         current_job->next = job;
         //make job to be current_job
-        job = current_job;
+        current_job = job;
         //set the next of job to be NULL
         job->next = NULL;
     }
-    free(job);
+    printf("Job number: [%d]   Process id: %d", job->number, job->pid);
 }
 
 //Function to refresh job list
@@ -125,16 +122,15 @@ void refreshJobList()
         if (ret_pid == 0)
         {
             //__________________________________________________________________
-            //what does this mean : child status not changed????
-            //do the needful : remove node???
-            current_job->next = current_job->next->next;
-            prev_job->next = current_job->next;
-            
+            prev_job->next=current_job->next;
+            printf("Job number: [%d]   [DONE]\n", current_job->number);
+            free(current_job);
+            current_job =prev_job->next;          
         }
         else
         {
-            //what does this mean
-            //do the needful
+            prev_job = current_job;
+            current_job = current_job->next;
             //_________________________________________________________________
         }
     }
@@ -200,7 +196,7 @@ void waitForEmptyLL(int nice, int bg)
 		   else if ((ch == ' ' || ch == '\n') && strcmp(flag, "w") == 0) { ++cnt; }
 	   }
     }
-   else{printf("Failed to open the file\n");}
+   else{printf("Failed to open the file or no flag\n");}
   
      return cnt;
  }
@@ -216,42 +212,6 @@ void performAugmentedWait()
     printf("sleeping for %d\n", w);
     rem = sleep(w);
     return;
-
-    /*		if (cnt == 1)
-			printf("No background job specified.\n");
-		else {
-			int selected_job = atoi(args[1]);
-			if (selected_job < 1 || background_pids[selected_job - 1] == 0) {
-				printf("Invalid job number.\n");
-			} else {
-				foreground_pid = background_pids[selected_job - 1];
-				int status = 0;
-				waitpid(foreground_pid, &status, 0); // Wait for child
-				foreground_pid = 0;
-				background_pids[selected_job - 1] = 0;
-				free(background_commands[selected_job - 1]);
-				background_commands[selected_job - 1] = NULL;
-				if (status != 0) {
-					if (WIFEXITED(status)) {
-						int exit_status = WEXITSTATUS(status);
-						printf("Child terminated normally (exit status %d)\n", exit_status);
-					}
-					if (WIFSIGNALED(status)) {
-						int signal_number = WTERMSIG(status);
-						char *signal = strsignal(signal_number);
-						// Child terminated by signal (not printed to enhance user experience)
-						
-					}
-					if (WIFSTOPPED(status)) {
-						int signal_number = 0;
-						printf("Child stopped by delivery of signal #%d\n", signal_number);
-					}
-					if (WIFCONTINUED(status)) {
-						printf("Child process was resumed by delivery of SIGCONT\n");
-					}
-				}
-			}
-		}*/
 }
 
 //______________________________________________________________________________
@@ -263,13 +223,26 @@ int waitforjob(char *jobnc)
     struct node *trv;
     int jobn = (*jobnc) - '0';
     trv = head_job;
+    int isback = 0; //idicates if background job was found
+
     //traverse through linked list and find the corresponding job
     //hint : traversal done in other functions too
-    
+    while(trv !=NULL){
+        if(jobn == trv->number){
+            //background job found
+            isback =1;
+            waitpid(trv->pid,NULL,WUNTRACED);
+            printf("Job number: [%d]   [DONE]\n", trv->number);
+            break;
+        }
+        trv = trv->next;
+    }
+    if (!isback){
+        printf("There is no backgrouns job at [%d]\n", jobn);
+    }
         //if correspoding job is found 
         //use its pid to make the parent process wait.
         //waitpid with proper argument needed here
-    
     return 0;
 }
 //______________________________________________________________________________
@@ -393,7 +366,7 @@ int main(void)
         }
         else if (!strcmp("fg", args[0]))
         {
-            //bring a background process to foregrounf
+            //bring a background process to foreground
             waitforjob(args[1]);
         }
         else if (!strcmp("cd", args[0]))
