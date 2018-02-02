@@ -74,14 +74,15 @@ void addToJobList(char *args[])
     {
         //point current_job to head_job
         current_job = head_job;
-
+        int j = 1;
         //traverse the linked list to reach the last job
         while(current_job->next !=NULL){
             current_job = current_job->next;
+            ++j;
         }
 
         //init all values of the job like above num,pid,cmd,spawn
-        job->number = current_job->number+1;
+        job->number = j;//current_job->number+1;
         job->pid = process_id;
         job->cmd = args[0];
         job->spawn = (unsigned int)time(NULL);
@@ -121,17 +122,25 @@ void refreshJobList()
         //one of the below needs node removal from linked list
         if (ret_pid == 0)
         {
-            //__________________________________________________________________
-            prev_job->next=current_job->next;
+            prev_job->next=current_job->next; 
             printf("Job number: [%d]   [DONE]\n", current_job->number);
             free(current_job);
-            current_job =prev_job->next;          
+            current_job =prev_job->next; 
+
+         
         }
         else
         {
-            prev_job = current_job;
+            // if(current_job==head_job){ ----------------------------------------------------------
+            //     head_job = head_job->next;
+
+            // }
+            // else if(current_job->next==NULL){
+
+            // }
+            // else
+            prev_job = current_job; 
             current_job = current_job->next;
-            //_________________________________________________________________
         }
     }
     return;
@@ -151,9 +160,12 @@ void listAllJobs()
     //heading row print only once.
     printf("\nID\tPID\tCmd\tstatus\tspawn-time\n");
         
-        //traverse the linked list and print using the following statement for each job
+     while(current_job!=NULL){
+         //traverse the linked list and print using the following statement for each job
             printf("%d\t%d\t%s\tRUNNING\t%s\n", current_job->number, current_job->pid, current_job->cmd, ctime(&(current_job->spawn)));
-           
+           current_job=current_job->next;
+
+     }   
         
     return;
 }
@@ -182,21 +194,26 @@ void waitForEmptyLL(int nice, int bg)
      char ch;
      FILE *fp;
      fp = fopen(filename,"r");
+   
      if ( fp )
    {
+
 	//Repeat until End Of File character is reached.	
 	   while ((ch=getc(fp)) != EOF) {		
             //if flag is l 
             //count the number of lines in the file 
             //set it in cnt
-		   if (ch == '\n' && strcmp(flag, "l") == 0) { ++cnt;}  
+		   if (ch == '\n' && strcmp(flag, "-l") == 0) { ++cnt;}  
            //if flag is w
            //count the number of words in the file
            //set it in cnt
-		   else if ((ch == ' ' || ch == '\n') && strcmp(flag, "w") == 0) { ++cnt; }
+		   else if ((ch == ' ' || ch == '\n') && strcmp(flag, "-w") == 0) { ++cnt; }
 	   }
     }
-   else{printf("Failed to open the file or no flag\n");}
+  if(strcmp(flag, "-l") != 0 && strcmp(flag, "-w") != 0){
+        printf("unrecognized flag\n");
+    }
+   else{printf("Failed to open the file or flag missing\n");}
   
      return cnt;
  }
@@ -223,7 +240,7 @@ int waitforjob(char *jobnc)
     struct node *trv;
     int jobn = (*jobnc) - '0';
     trv = head_job;
-    int isback = 0; //idicates if background job was found
+    int isback = 0; //indicates if background job was found
 
     //traverse through linked list and find the corresponding job
     //hint : traversal done in other functions too
@@ -238,7 +255,7 @@ int waitforjob(char *jobnc)
         trv = trv->next;
     }
     if (!isback){
-        printf("There is no backgrouns job at [%d]\n", jobn);
+        printf("There is no background job at [%d]\n", jobn);
     }
         //if correspoding job is found 
         //use its pid to make the parent process wait.
@@ -270,7 +287,7 @@ int getcmd(char *prompt, char *args[], int *background, int *nice)
     }
     else
         *background = 0;
-    //check for redirection
+    //check for redirection _________________________________________________________________
     //now you know what does args store
     //check if args has ">"
     //if yes set isred to 1
@@ -280,7 +297,7 @@ int getcmd(char *prompt, char *args[], int *background, int *nice)
 		isred = 1;
 		*loc = ' ';
 	} else
-		isred = 0;
+		isred = 0; //______________________________________________________________
     while ((token = strsep(&line, " \t\n")) != NULL)
     {
         for (int j = 0; j < strlen(token); j++)
@@ -349,6 +366,8 @@ int main(void)
         //keep asking unless the user enters something
         while (!(cnt >= 1))
             cnt = getcmd("\n>> ", args, &bg, &nice);
+
+        waitForEmptyLL(nice,bg);
 
         //use the if-else ladder to handle built-in commands
         //built in commands don't need redirection
@@ -433,14 +452,15 @@ int main(void)
                 if (bg == 0){
                     //FOREGROUND //parent wait for child ---------------------------------------------------------------------------
                     // waitpid with proper argument required
-                    int status = 0;
-                    if (waitpid(pid, &status, 0) == pid) { 
-					    if (status != 0) {
-						    // Error while waiting for child 
-					    }
-				    } else {
-					perror("Error while waiting for child");
-				    }   
+                    // int status = 0;
+                    // if (waitpid(pid, &status, 0) == pid) { 
+					//     if (status != 0) {
+					// 	    // Error while waiting for child 
+					//     }
+				    // } else {
+					// perror("Error while waiting for child");
+				    // }   
+                    waitpid(pid,NULL,0);
                 }
                 else{
                     //BACKGROUND //parent need not wait
@@ -481,7 +501,7 @@ int main(void)
                     //make sure you use all the read write exec authorisation flags
                     //while you use open (man 2 open) to open file
 
-                    //set ">" and redirected filename to NULL
+                    //set ">" and redirected filename to NULL __________________________________________________ put redirect there?
                     int i =1; 
                     args[i] = NULL;
                     args[i + 1] = NULL;
