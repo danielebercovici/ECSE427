@@ -34,6 +34,9 @@ pid_t process_id;
 //flag variable to check if redirection of output is required
 int isred = 0;
 
+//count for number of jobs in list
+int n = 1;
+
 //structure of a single node
 //do not modify this structure
 struct node
@@ -74,15 +77,15 @@ void addToJobList(char *args[])
     {
         //point current_job to head_job
         current_job = head_job;
-        int j = 1;
+       
         //traverse the linked list to reach the last job
         while(current_job->next !=NULL){
             current_job = current_job->next;
-            ++j;
+            n++;
         }
 
         //init all values of the job like above num,pid,cmd,spawn
-        job->number = j;//current_job->number+1;
+        job->number = n + 1;//current_job->number+1;
         job->pid = process_id;
         job->cmd = args[0];
         job->spawn = (unsigned int)time(NULL);
@@ -94,7 +97,7 @@ void addToJobList(char *args[])
         //set the next of job to be NULL
         job->next = NULL;
     }
-    printf("Job number: [%d]   Process id: %d", job->number, job->pid);
+    printf("Job number: [%d]   Process id: %d\n", job->number, job->pid);
 }
 
 //Function to refresh job list
@@ -109,6 +112,13 @@ void refreshJobList()
     
     //variable to store returned pid 
     pid_t ret_pid;
+    //make sure current job is not at head of the list
+
+    // int headstatus = waitpid(head_job->pid, NULL, WNOHANG);
+    // while(headstatus == 0){
+    //     head_job=head_job->next;
+    //     headstatus =waitpid(head_job->pid, NULL, WNOHANG);
+    // }
 
     //perform init for pointers
     current_job = head_job;
@@ -120,28 +130,19 @@ void refreshJobList()
         //use waitpid to init ret_pid variable
         ret_pid = waitpid(current_job->pid, NULL, WNOHANG);
         //one of the below needs node removal from linked list
-        if (ret_pid == 0)
+        if (ret_pid == 0) //________________________________________________________________________
         {
             prev_job->next=current_job->next; 
-            printf("Job number: [%d]   [DONE]\n", current_job->number);
+            printf("Job number: [%d]\n", current_job->number);
             free(current_job);
             current_job =prev_job->next; 
-
          
         }
         else
         {
-            // if(current_job==head_job){ ----------------------------------------------------------
-            //     head_job = head_job->next;
-
-            // }
-            // else if(current_job->next==NULL){
-
-            // }
-            // else
             prev_job = current_job; 
             current_job = current_job->next;
-        }
+        } //____________________________________________________________________
     }
     return;
 }
@@ -249,7 +250,8 @@ int waitforjob(char *jobnc)
             //background job found
             isback =1;
             waitpid(trv->pid,NULL,WUNTRACED);
-            printf("Job number: [%d]   [DONE]\n", trv->number);
+            
+            printf("Job number: [%d]\n", trv->number);
             break;
         }
         trv = trv->next;
@@ -292,12 +294,12 @@ int getcmd(char *prompt, char *args[], int *background, int *nice)
     //check if args has ">"
     //if yes set isred to 1
     //else set isred to 0
-	if ((loc = strchr(line, '>')) != NULL) {
+	// if ((loc = strchr(line, '>')) != NULL) {
 
-		isred = 1;
-		*loc = ' ';
-	} else
-		isred = 0; //______________________________________________________________
+	// 	isred = 1;
+	// 	*loc = ' ';
+	// } else
+	// 	isred = 0; //______________________________________________________________
     while ((token = strsep(&line, " \t\n")) != NULL)
     {
         for (int j = 0; j < strlen(token); j++)
@@ -367,6 +369,7 @@ int main(void)
         while (!(cnt >= 1))
             cnt = getcmd("\n>> ", args, &bg, &nice);
 
+        //handle nice 
         waitForEmptyLL(nice,bg);
 
         //use the if-else ladder to handle built-in commands
@@ -386,7 +389,11 @@ int main(void)
         else if (!strcmp("fg", args[0]))
         {
             //bring a background process to foreground
-            waitforjob(args[1]);
+            if(args[1] == NULL){
+                printf("index of foeground job not specified");
+            }
+            else
+                waitforjob(args[1]);
         }
         else if (!strcmp("cd", args[0]))
         {
@@ -450,23 +457,13 @@ int main(void)
                 //we are inside parent
                 //printf("inside the parent\n");
                 if (bg == 0){
-                    //FOREGROUND //parent wait for child ---------------------------------------------------------------------------
-                    // waitpid with proper argument required
-                    // int status = 0;
-                    // if (waitpid(pid, &status, 0) == pid) { 
-					//     if (status != 0) {
-					// 	    // Error while waiting for child 
-					//     }
-				    // } else {
-					// perror("Error while waiting for child");
-				    // }   
+                    //FOREGROUND   
                     waitpid(pid,NULL,0);
                 }
                 else{
                     //BACKGROUND //parent need not wait
                     process_id = pid;
                     addToJobList(args);
-                    // waitpid with proper argument required ----------------------------------------------------------------------------------
                 }
             }
             else
@@ -475,34 +472,37 @@ int main(void)
 
                 //introducing augmented delay
                 performAugmentedWait();
+
+
+                 //check for redirection _________________________________________________________________
+                 //now you know what does args store
+                //check if args has ">"
+                //if yes set isred to 1
+                //else set isred to 0
+                int i = 0;
+                char *filename;
+
+                while(args[i] != NULL){
+                    if(strcmp(args[i], ">") == 0) {
+                        isred = 1;
+                    } else {
+                        isred = 0;
+                    }
+                    filename = args[i+1];
+                    i++;
+                }
                 
                 if (isred == 1)
                 {
-                    /*
-                    if (redir == 1) {
-				        if (cnt < 2) {
-					        printf("No output file specified\n");
-					        exit(EXIT_FAILURE);
-				        }
-				        close(1);
-				        for (int i = 0; i < MAX_ARGS; i++) {
-					        if (args[i] == NULL) {
-						        open(args[i - 1], O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); // Default Linux permissions
-						        args[i - 1] = NULL;
-						        break;
-					        }
-				        }
-			        }*/
                     
                     //open file and change output from stdout to that  
-                    int file = open(args[2], O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-                    int out=dup(1);
-                    dup2(file, 1) ; 
+                    int file = open(filename, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+                    dup2(file, 1);
+                    close(file); 
                     //make sure you use all the read write exec authorisation flags
                     //while you use open (man 2 open) to open file
 
-                    //set ">" and redirected filename to NULL __________________________________________________ put redirect there?
-                    int i =1; 
+                    //set ">" and redirected filename to NULL
                     args[i] = NULL;
                     args[i + 1] = NULL;
 
