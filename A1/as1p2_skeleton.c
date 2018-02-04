@@ -81,7 +81,6 @@ void addToJobList(char *args[])
         //traverse the linked list to reach the last job
         while(current_job->next !=NULL){
             current_job = current_job->next;
-            n++;
         }
 
         //init all values of the job like above num,pid,cmd,spawn
@@ -97,7 +96,7 @@ void addToJobList(char *args[])
         //set the next of job to be NULL
         job->next = NULL;
     }
-    printf("Job number: [%d]   Process id: %d\n", job->number, job->pid);
+    //printf("Job number: [%d]   Process id: %d\n", job->number, job->pid);
 }
 
 //Function to refresh job list
@@ -114,11 +113,6 @@ void refreshJobList()
     pid_t ret_pid;
     //make sure current job is not at head of the list
 
-    // int headstatus = waitpid(head_job->pid, NULL, WNOHANG);
-    // while(headstatus == 0){
-    //     head_job=head_job->next;
-    //     headstatus =waitpid(head_job->pid, NULL, WNOHANG);
-    // }
 
     //perform init for pointers
     current_job = head_job;
@@ -130,19 +124,23 @@ void refreshJobList()
         //use waitpid to init ret_pid variable
         ret_pid = waitpid(current_job->pid, NULL, WNOHANG);
         //one of the below needs node removal from linked list
-        if (ret_pid == 0) //________________________________________________________________________
+        if (ret_pid == 0) 
         {
-            prev_job->next=current_job->next; 
-            printf("Job number: [%d]\n", current_job->number);
-            free(current_job);
-            current_job =prev_job->next; 
+            prev_job = current_job; 
+            current_job = current_job->next;
          
         }
         else
         {
-            prev_job = current_job; 
-            current_job = current_job->next;
-        } //____________________________________________________________________
+            if (current_job == head_job) {
+                head_job = head_job->next;
+            }
+
+            prev_job->next=current_job->next; 
+            //printf("Job number: [%d]\n", current_job->number);
+            free(current_job);
+            current_job =prev_job->next; 
+        } 
     }
     return;
 }
