@@ -116,12 +116,17 @@ struct Queue* queue;
 void *FnAirplane(void* cl_id)
 {
     /*each plane rand() from 5-10 people take taxi*/
+    int num_passengers = 5+rand()%(6);
+    printf("%d",num_passengers);
+    return 0;
 }
 
 /* Consumer Function: simulates a taxi that takes n time to take a passenger home and come back to the airport */
 void *FnTaxi(void* pr_id)
 {
     /*each taxi rand() from 10-30 min to destination*/
+    int time = 10+rand()%(21); //min
+    return 0;
 }
 
 int main(int argc, char *argv[])
@@ -136,9 +141,9 @@ int main(int argc, char *argv[])
   printf("You entered: %d airplanes per hour\n",num_airplanes);
   printf("You entered: %d taxis\n", num_taxis);
   
-  
   //initialize queue
   queue = createQueue(BUFFER_SIZE);
+
   /*passengers queue waiting in line for taxi*/
   
   //declare arrays of threads and initialize semaphore(s)
@@ -149,11 +154,14 @@ int main(int argc, char *argv[])
     
   //create threads for airplanes
   pthread_t threadair;
-  pthread_create(&threadair, NULL, *FnAirplane,(void*)num_airplanes);
+  if(pthread_create(&threadair, NULL, *FnAirplane,&num_airplanes)){
+      printf("ERror");
+  }
+  
   
   //create threads for taxis
   pthread_t threadtaxi;
-  pthread_create(&threadtaxi, NULL, *FnTaxi,(void*)num_taxis);
+  pthread_create(&threadtaxi, NULL, *FnTaxi,&num_taxis);
 
   pthread_exit(NULL);
 }
