@@ -72,7 +72,7 @@ void enqueue(struct Queue* queue, int item)
     queue->rear = (queue->rear + 1)%queue->capacity;
     queue->array[queue->rear] = item;
     queue->size = queue->size + 1;
-    printf("%d enqueued to queue\n", item);
+    //printf("%d enqueued to queue\n", item);
 }
 
 // Function to remove an item from queue. 
@@ -121,65 +121,60 @@ struct Queue* queue;
 void *FnAirplane(void* cl_id)
 {
     
-    //while(1){
-        //NEW PASSENGER ID EVERY HOUR------- sleep(1)????
+    while(1){
         int numpass = 5+rand()%(6);//number of passengers on plane cl_id
         printf("Airplane %d arrives with %d passengers\n",(int)cl_id,numpass);
-        char id1[10];
-        char id2[10];
-        char id[80];
-        sem_wait(&empty);
-        sem_wait(&mutex); 
+ 
+        int id; //passenger id
+
         for (int k = 0; k<numpass; k++){
             //format passenger id 1ZZZYYY
-            sprintf(id1,"%03d", (int)cl_id);
-            sprintf(id2,"%03d", k);
-            strcpy(id, "1");
-            strcat(id, id1);
-            strcat(id, id2);
+            id=1000000 + (1000 * (int)cl_id) + k;
+
+            sem_wait(&empty);
+            sem_wait(&mutex); 
             if (isFull(queue)){
-                printf("Platform is full: Rest of passengers of plane %d take bus",(int)cl_id);
+                printf("Platform is full: Rest of passengers of plane %d take bus\n",(int)cl_id);
                 break;
             }
             else{
                 //enqueue passenger
-                int pid = atoi(id);
-                enqueue(queue,pid);
-                printf("Passenger %s of airplane %d arrives to platform\n",id, (int)cl_id);
+                enqueue(queue,id);
+                printf("Passenger %d of airplane %d arrives to platform\n",id, (int)cl_id);
             }
+            sem_post(&mutex); 
+            sem_post(&full);
         }
-        sem_post(&mutex); 
-        sem_post(&full);
-       
-    //}
+
+    sleep(1);
+    }
 
 }
 
 /*CONSUMER Function: simulates a taxi that takes n time to take a passenger home and come back to the airport */
 void *FnTaxi(void* pr_id)
 {
-    printf("taxi driver %d arrives \n", (int)pr_id);
-    //while(1){
-        sem_wait(&full);
-        sem_wait(&mutex);
+    while(1){
+    printf("Taxi driver %d arrives \n", (int)pr_id);
+
         //check if empty wait
         if(isEmpty(queue)){
-            //wait ----how to wait?????
-            //sem_wait(empty); ????
             printf("Taxi driver %d waits for passengers to enter the platform\n", (int)pr_id);
-         }
-        else{
-            //taxi driver leaves
-            int pid = dequeue(queue);
-            printf("Taxi driver %d picked up client %d from platform\n", (int)pr_id, pid);
-         }
+            //wait
+            sem_wait(&full);
+        }
+        sem_wait(&mutex);
+        //taxi driver leaves
+        int id = dequeue(queue);
+        printf("Taxi driver %d picked up client %d from platform\n", (int)pr_id, id);
+         
         sem_post(&mutex);
         sem_post(&empty);
 
         //each taxi rand() from 10-30 min to destination
         float time = (10+rand()%(21))/60.0; //converted to sec
         sleep(time); //driving passengers to destinations
-    //}
+    }
     
   
 }
@@ -202,7 +197,7 @@ int main(int argc, char *argv[])
   queue = createQueue(BUFFER_SIZE); 
 
   
-  //declare arrays of threads and initialize semaphore(s) ------?????
+  //declare arrays of threads and initialize semaphore(s)
     pthread_t airplanes;
     pthread_t taxis; 
     
@@ -214,20 +209,17 @@ int main(int argc, char *argv[])
   int *taxi_ids[num_taxis];
   int *airplane_ids[num_airplanes];
 
-  //while(1){..... sleep(1)}???? ???????--------- 
   //create threads for airplanes
  for (int i=0 ; i< num_airplanes; i++){
     printf("Creating airplane thread %d\n", i);
     pthread_create(&airplanes, NULL, FnAirplane, i);
-    //sleep(1)???-----
   }
 
   //create threads for taxis
-//while(1){ //return to airport??????------------
  for (int j=0 ; j< num_taxis; j++){
     pthread_create(&taxis, NULL, FnTaxi, j);
   }
-//}
   
   pthread_exit(NULL);
 }
+
