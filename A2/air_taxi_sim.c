@@ -10,8 +10,8 @@
  */
 
 //Please enter your name and McGill ID below
-//Name: <your name>
-//McGill ID: <magic number>
+//Name: Daniele Bercovici
+//McGill ID: 260627845
 
  
 
@@ -25,7 +25,10 @@
 
 
 int BUFFER_SIZE = 100; //size of queue
-
+//initialize semaphores
+sem_t mutex;
+sem_t empty;
+sem_t full;
 
 
 // A structure to represent a queue
@@ -119,58 +122,63 @@ void *FnAirplane(void* cl_id)
 {
     
     //while(1){
-        //produce passenger (w/ planenum+pid) clear every hour
+        //NEW PASSENGER ID EVERY HOUR------- sleep(1)????
         int numpass = 5+rand()%(6);//number of passengers on plane cl_id
-        printf("Airplane %d arrives with %d passengers\n",cl_id,numpass);
-        char id1[3];
-        char id2[3];
+        printf("Airplane %d arrives with %d passengers\n",(int)cl_id,numpass);
+        char id1[10];
+        char id2[10];
+        char id[80];
+        sem_wait(&empty);
+        sem_wait(&mutex); 
         for (int k = 0; k<numpass; k++){
-            sprintf(id1,"%d", (int)cl_id);
-            sprintf(id2,"%d", k);
-            printf("Passenger %03s%03s of airplane %d arrives to platform\n",id1,id2, (int)cl_id);
+            //format passenger id 1ZZZYYY
+            sprintf(id1,"%03d", (int)cl_id);
+            sprintf(id2,"%03d", k);
+            strcpy(id, "1");
+            strcat(id, id1);
+            strcat(id, id2);
+            if (isFull(queue)){
+                printf("Platform is full: Rest of passengers of plane %d take bus",(int)cl_id);
+                break;
+            }
+            else{
+                //enqueue passenger
+                int pid = atoi(id);
+                enqueue(queue,pid);
+                printf("Passenger %s of airplane %d arrives to platform\n",id, (int)cl_id);
+            }
         }
-        //wait(&empty);
-        //wait(&mutex); 
-
-        //check empty or full queue
-        if (isFull(queue)){
-            printf("Platform is full: Rest of passengers of plane %d take bus",(int)cl_id);
-            //ignore other passengers;????? -------how to keep track of passengers>????? Save id in the queue??? but how to save id??
-        }
-        else{
-            //enqueue passenger
-        }
-
-        //signal(&mutex); 
-        //signal(&full);
+        sem_post(&mutex); 
+        sem_post(&full);
        
-    }
+    //}
 
-//}
-
+}
 
 /*CONSUMER Function: simulates a taxi that takes n time to take a passenger home and come back to the airport */
 void *FnTaxi(void* pr_id)
 {
+    printf("taxi driver %d arrives \n", (int)pr_id);
     //while(1){
-        //wait(&full);
-        //wait(&mutex);
+        sem_wait(&full);
+        sem_wait(&mutex);
         //check if empty wait
         if(isEmpty(queue)){
-            //wait
+            //wait ----how to wait?????
+            //sem_wait(empty); ????
+            printf("Taxi driver %d waits for passengers to enter the platform\n", (int)pr_id);
          }
         else{
-            dequeue(queue);
-            //log passenger and taxi id
-            //printf("Taxi driver %d picked up client %d from platform", (int)pr_id, ??);
+            //taxi driver leaves
+            int pid = dequeue(queue);
+            printf("Taxi driver %d picked up client %d from platform\n", (int)pr_id, pid);
          }
-        //signal(&mutex);
-        //signal(&empty);
+        sem_post(&mutex);
+        sem_post(&empty);
 
         //each taxi rand() from 10-30 min to destination
         float time = (10+rand()%(21))/60.0; //converted to sec
-        sleep(time); //drivingpassengers to destinations
-        //-------COME BACK TO AIRPORT??
+        sleep(time); //driving passengers to destinations
     //}
     
   
@@ -191,35 +199,35 @@ int main(int argc, char *argv[])
   
   
   //initialize queue
-  queue = createQueue(BUFFER_SIZE); //max 100 passengers waiitng for taxi
+  queue = createQueue(BUFFER_SIZE); 
 
   
-  //declare arrays of threads and initialize semaphore(s) ---?????
+  //declare arrays of threads and initialize semaphore(s) ------?????
     pthread_t airplanes;
     pthread_t taxis; 
-    sem_t mutex;
+    
     sem_init(&mutex, 0, 1);
-    sem_t empty;
-    sem_init(&empty, 0, BUFFER_SIZE); //All taxis empty
-    sem_t full;
+    sem_init(&empty, 0, BUFFER_SIZE); //all taxis empty
     sem_init(&empty, 0, 0); //no taxis full
 
   //create arrays of integer pointers to ids for taxi / airplane threads
   int *taxi_ids[num_taxis];
   int *airplane_ids[num_airplanes];
-    
+
+  //while(1){..... sleep(1)}???? ???????--------- 
   //create threads for airplanes
  for (int i=0 ; i< num_airplanes; i++){
     printf("Creating airplane thread %d\n", i);
     pthread_create(&airplanes, NULL, FnAirplane, i);
+    //sleep(1)???-----
   }
 
   //create threads for taxis
-
- for (int j=0 ; j< num_airplanes; j++){
-    printf("taxi driver %d arrives \n", j);
+//while(1){ //return to airport??????------------
+ for (int j=0 ; j< num_taxis; j++){
     pthread_create(&taxis, NULL, FnTaxi, j);
   }
+//}
   
   pthread_exit(NULL);
 }
