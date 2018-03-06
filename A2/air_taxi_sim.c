@@ -30,6 +30,7 @@ sem_t mutex;
 sem_t empty;
 sem_t full;
 
+int runtime =0; //for question 2 (run for 10hrs)
 
 // A structure to represent a queue
 struct Queue
@@ -122,31 +123,36 @@ void *FnAirplane(void* cl_id)
 {
     
     while(1){
-        int numpass = 5+rand()%(6);//number of passengers on plane cl_id
-        printf("Airplane %d arrives with %d passengers\n",(int)cl_id,numpass);
+        ++runtime;
+        int numpass = 5+rand()%(6);//number of passengers on plane cl_id 
+        int airid = (int)cl_id;
+        printf("Airplane %d arrives with %d passengers\n",airid,numpass);
  
         int id; //passenger id
 
         for (int k = 0; k<numpass; k++){
             //format passenger id 1ZZZYYY
-            id=1000000 + (1000 * (int)cl_id) + k;
+            id=1000000 + (1000 * airid) + k;
 
-            sem_wait(&empty);
-            sem_wait(&mutex); 
             if (isFull(queue)){
-                printf("Platform is full: Rest of passengers of plane %d take bus\n",(int)cl_id);
+                printf("Platform is full: Rest of passengers of plane %d take bus\n",airid);
                 break;
             }
-            else{
-                //enqueue passenger
-                enqueue(queue,id);
-                printf("Passenger %d of airplane %d arrives to platform\n",id, (int)cl_id);
-            }
+            sem_wait(&empty);
+            sem_wait(&mutex);
+
+            //enqueue passenger
+            enqueue(queue,id);
+            printf("Passenger %d of airplane %d arrives to platform\n",id, airid);
+            
             sem_post(&mutex); 
             sem_post(&full);
         }
 
     sleep(1);
+    if (runtime==10){
+        break;
+    }
     }
 
 }
@@ -155,25 +161,29 @@ void *FnAirplane(void* cl_id)
 void *FnTaxi(void* pr_id)
 {
     while(1){
-    printf("Taxi driver %d arrives \n", (int)pr_id);
+        int taxis=(int)pr_id;
+        printf("Taxi driver %d arrives \n", taxis);
 
-        //check if empty wait
+        //check if no passengers on the platform
         if(isEmpty(queue)){
-            printf("Taxi driver %d waits for passengers to enter the platform\n", (int)pr_id);
-            //wait
-            sem_wait(&full);
+            printf("Taxi driver %d waits for passengers to enter the platform\n", taxis);
+            break; //gets stuck in infinite loop or else
         }
+        sem_wait(&full);
         sem_wait(&mutex);
+
         //taxi driver leaves
-        int id = dequeue(queue);
-        printf("Taxi driver %d picked up client %d from platform\n", (int)pr_id, id);
-         
+        int id = front(queue);
+        dequeue(queue);
+        printf("Taxi driver %d picked up client %d from platform\n", taxis, id);
+
         sem_post(&mutex);
         sem_post(&empty);
 
         //each taxi rand() from 10-30 min to destination
         float time = (10+rand()%(21))/60.0; //converted to sec
         sleep(time); //driving passengers to destinations
+  
     }
     
   
@@ -198,12 +208,12 @@ int main(int argc, char *argv[])
 
   
   //declare arrays of threads and initialize semaphore(s)
-    pthread_t airplanes;
-    pthread_t taxis; 
+    pthread_t airplanes[num_airplanes];
+    pthread_t taxis[num_taxis]; 
     
     sem_init(&mutex, 0, 1);
     sem_init(&empty, 0, BUFFER_SIZE); //all taxis empty
-    sem_init(&empty, 0, 0); //no taxis full
+    sem_init(&full, 0, 0); //no taxis full
 
   //create arrays of integer pointers to ids for taxi / airplane threads
   int *taxi_ids[num_taxis];
@@ -212,12 +222,16 @@ int main(int argc, char *argv[])
   //create threads for airplanes
  for (int i=0 ; i< num_airplanes; i++){
     printf("Creating airplane thread %d\n", i);
-    pthread_create(&airplanes, NULL, FnAirplane, i);
+    int *temp = i;
+    airplane_ids[i]=temp;
+    pthread_create(&airplanes[i], NULL, FnAirplane, airplane_ids[i]);
   }
 
   //create threads for taxis
  for (int j=0 ; j< num_taxis; j++){
-    pthread_create(&taxis, NULL, FnTaxi, j);
+     int *temp = j;
+     taxi_ids[j] = temp;
+    pthread_create(&taxis[j], NULL, FnTaxi,taxi_ids[j]);
   }
   
   pthread_exit(NULL);
