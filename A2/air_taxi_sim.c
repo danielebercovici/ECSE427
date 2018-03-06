@@ -167,14 +167,13 @@ void *FnTaxi(void* pr_id)
         //check if no passengers on the platform
         if(isEmpty(queue)){
             printf("Taxi driver %d waits for passengers to enter the platform\n", taxis);
-            break; //gets stuck in infinite loop or else
         }
+        
         sem_wait(&full);
         sem_wait(&mutex);
 
         //taxi driver leaves
-        int id = front(queue);
-        dequeue(queue);
+        int id = dequeue(queue);
         printf("Taxi driver %d picked up client %d from platform\n", taxis, id);
 
         sem_post(&mutex);
