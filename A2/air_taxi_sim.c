@@ -150,6 +150,7 @@ void *FnAirplane(void* cl_id)
         }
 
     sleep(1);
+    //Run for 10 hours
     if (runtime==10){
         break;
     }
@@ -185,7 +186,6 @@ void *FnTaxi(void* pr_id)
   
     }
     
-  
 }
 
 
