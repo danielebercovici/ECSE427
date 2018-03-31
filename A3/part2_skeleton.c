@@ -155,6 +155,20 @@ void accessSCAN(int *request, int numRequest)
 //access the disk location in CSCAN
 void accessCSCAN(int *request, int numRequest)
 {
+    int next = 0; //the next value in the order
+    int nextvalue = 0; //value of the difference of the next one
+    //find an initial acsending value
+    for(int x =0; x<numRequest;x++){
+        if(START-request[x] <0){
+            next = request[x];
+            nextvalue=START-request[x]; 
+            break;
+        }
+    }
+
+    int *newRequest = malloc(numRequest * sizeof(int)); //new order
+    int newCnt=numRequest;
+    
     //Assumes only goes forward (ascending) then fast return
     //sort
     for (int i=0; i<numRequest; i++){
@@ -167,19 +181,66 @@ void accessCSCAN(int *request, int numRequest)
             }
         } 
     }
+
+    //find closest next job and that is ascending
+    for (int i=0; i<numRequest; i++){
+        if(next ==0){
+            break;
+        }
+        //find the closest one to start
+        int value= START-request[i];
+        if(abs(value)<abs(nextvalue)){ 
+            next = request[i];
+            nextvalue=value;
+        } 
+    }
+
+    int done=0;//indicates whether its done when there is no acsending job from start
     //find position
     int m=0; //location of first value to explore
     for(int k=0; k<numRequest; k++){
-        if(request[k]==START){
+        if(next ==0){
+            newRequest[0]=HIGH;
+            newRequest[1]=LOW;
+            newCnt+=2;
+            //go in order
+            for(int n = 2; n<numRequest+2; n++){
+                newRequest[n]=request[n-2];
+            }
+            done =1;    
+            break;  
+        }
+        if(request[k]==next){
             newRequest[0]=request[k];
             break;
         }
         m++;
+        
     }
+
+  if(!done){
+    for (int n =1; n<numRequest-m;n++){
+        newRequest[n]=request[m+n];
+    }
+    if(m!=0){//needs to go back
+        newRequest[numRequest-m]=HIGH; //go to end of track
+        newCnt++;
+        newRequest[numRequest-m+1]=LOW; //fast return
+        newCnt++;
+        
+        int p=0;
+        for(int l = numRequest-m+2; l<= numRequest+1; l++){
+            newRequest[l] = request[p];
+            p++;
+        }
+    }
+  }
+
+
 
     printf("\n----------------\n");
     printf("CSCAN :");
-    //printSeqNPerformance(newRequest, newCnt);
+    printSeqNPerformance(newRequest, newCnt);
     printf("----------------\n");
     return;
 }
@@ -261,10 +322,91 @@ void accessLOOK(int *request, int numRequest)
 //access the disk location in CLOOK
 void accessCLOOK(int *request, int numRequest)
 {
-    //write your logic here
+    //Similar to CScan except no need going to end of tracks
+
+    int next = 0; 
+    int nextvalue = 0; 
+
+    //find an initial acsending value
+    for(int x =0; x<numRequest;x++){
+        if(START-request[x] <0){
+            next = request[x];
+            nextvalue=START-request[x]; 
+            break;
+        }
+    }
+
+    int *newRequest = malloc(numRequest * sizeof(int)); //new order
+    int newCnt=numRequest;
+    
+    //Assumes only goes forward (ascending) then fast return
+    //sort
+    for (int i=0; i<numRequest; i++){
+        for(int j = 0; j<numRequest; j++){
+
+            if (request[j]>request[i]){
+                int tmp=request[i];
+                request[i]=request[j];
+                request[j]=tmp;
+            }
+        } 
+    }
+
+    //find closest next job and that is ascending
+    for (int i=0; i<numRequest; i++){
+        if(next ==0){
+            break;
+        }
+        //find the closest one to start
+        int value= START-request[i];
+        if(abs(value)<abs(nextvalue)){ 
+            next = request[i];
+            nextvalue=value;
+        } 
+    }
+
+    int done=0;//indicates whether its done when there is no acsending job from start
+    //find position
+    int m=0; //location of first value to explore
+    for(int k=0; k<numRequest; k++){
+        if(next ==0){
+            newRequest[0]=HIGH;
+            newRequest[1]=LOW;
+            newCnt+=2;
+            //go in order
+            for(int n = 2; n<numRequest+2; n++){
+                newRequest[n]=request[n-2];
+            }
+            done =1;    
+            break;  
+        }
+        if(request[k]==next){
+            newRequest[0]=request[k];
+            break;
+        }
+        m++;
+        
+    }
+
+  if(!done){
+    for (int n =1; n<numRequest-m;n++){
+        newRequest[n]=request[m+n];
+    }
+    if(m!=0){//needs to go back
+        newRequest[numRequest-m]=LOW; //fast return
+        newCnt++;
+        int p=0;
+        for(int l = numRequest-m+1; l<= numRequest+1; l++){
+            newRequest[l] = request[p];
+            p++;
+        }
+    }
+  }
+
+
     printf("\n----------------\n");
     printf("CLOOK :");
-    //printSeqNPerformance(newRequest,newCnt);
+    printSeqNPerformance(newRequest,newCnt);
     printf("----------------\n");
     return;
 }
