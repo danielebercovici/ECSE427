@@ -61,10 +61,10 @@ void accessSSTF(int *request, int numRequest)
     //START is starting posiiton
     for (int i=0; i<numRequest; i++){
         for(int j = 0; j<numRequest; j++){
-            if(abs(START-request[j])==abs(START-request[i])){//TODO: tie breaker goes to number that came first ------------------------
-                printf("i: %i and j: %i",i,j);
+            // if(abs(START-request[j])==abs(START-request[i])&& i!=j){//TODO: tie breaker goes to number that came first ----------------------------------
+            //     //printf("request i: [%i] %i and request j: [%i] %i\n",request[i],i,request[j],j);
 
-            }
+            // }
             if (abs(START-request[j])>abs(START-request[i])){ 
                 int tmp=request[i];
                 request[i]=request[j];
