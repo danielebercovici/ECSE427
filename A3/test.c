@@ -3,21 +3,17 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <unistd.h>
+		
+		int **max;
+		int *Avail;
 
 
-
-int *avail; //Available resources
-int **max;//Maxij
-int numProcesses, numResources;
 /*
 Simulates resource requests by processes 
 */
 void request_simulator(int pr_id, int* request_vector){
 //call to get a request vector REQj
 //requests ij instances of each resource j where i is randomly selected as a value between 0 and amount of remaining resources
-for(int i =0; i<request_vector;i++){
-
-}
 //check if able to grant safe state
 //if so grant
 }
@@ -55,7 +51,6 @@ void* process_simulator(void* pr_id){
 //thread simulating process
 //gets random request vector
 int *request_vector;
-request_vector = malloc(numResources * sizeof(int));
 request_simulator((int)pr_id,request_vector);
 //calls banker algo
 bankers_algorithm((int)pr_id,request_vector);
@@ -87,37 +82,35 @@ if(deadlock){
     exit(1);//?????? HOW EXIT???
 }
 }
-int main()
-{
+ int main(){
+	 int numProcesses, numResources;
+	 printf("Enter the number of processes : ");
+	 scanf("%d", &numProcesses);
 
-    //Initialize all inputs to banker's algorithm
-    
-    printf("Enter the number of processes : ");
-    scanf("%d", &numProcesses);
+	 printf("Enter the number of district resources : ");
+	 scanf("%d", &numResources);
 
-    printf("Enter the number of district resources : ");
-    scanf("%d", &numResources);
-
-    //Avail, be careful shared mem
-    avail = malloc(numResources * sizeof(int));
-    for (int i = 0; i < numResources; i++){
-        printf("Enter the amount of %d resource in the system : ", i);
-        scanf("%d", &avail[i]);
+	 
+    Avail = malloc(numResources * sizeof(int));
+    for (int i = 0; i < numResources; i++)
+    {
+				printf("Enter the amount of %d resource in the system : ", i); //Avail, be careful shared mem
+        scanf("%d", &Avail[i]);
     } 
-
-    max=(int **)malloc(sizeof(int *) * numProcesses);
-    for (int k = 0; k < numProcesses; k++) {
-        max[k] = (int *) malloc(sizeof(int) * numResources);
-    }
-
-    for (int i = 0; i < numProcesses; i++){
-        for(int j=0; j< numResources; j++){
-            printf("Enter the max resource claim for process %i and resource %i: ", i,j);  
-            scanf("%d", &max[i][j]);
-        }  
-    }
-    
-    //create threads simulating processes (process_simulator)
+	   
+  	   max = (int **) malloc (sizeof(int *)*numProcesses);
+  	   for (int k = 0; k < numProcesses; k++) {
+  	         max[k] = (int *) malloc(sizeof(int)*numResources);
+  	 
+  	   }
+  	   for (int r = 0; r < numProcesses; r++) {
+  	     for (int c = 0; c < numResources; c++) {
+  	         printf("Enter the max resource claim for process %i and resource %i: ", r,c);
+						 scanf ("%d", &max[r][c]);
+  	     }
+ 	 
+  	   }
+			 //create threads simulating processes (process_simulator)
     int *p_ids[numProcesses];
     pthread_t p_id[numProcesses];
     for (int j=0 ; j< numProcesses; j++){
@@ -125,22 +118,14 @@ int main()
         p_ids[j] = temp;
         pthread_create(&p_id[j], NULL, process_simulator,p_ids[j]);
     }
-
-    //create a thread that takes away resources from the available pool (fault_simulator)  //QUESTION 2????? 
-    // pthread_t resource;
-    // while(1){
-    //     //HOW DO YOU DO UNIFORM PROBABILITY 50% for pr_id
-    //     //pthread_create(&resource,NULL,fault_simulator,pr_id);
-    //     sleep(10);
-    // }
-    
-
-    // //create a thread to check for deadlock (deadlock_checker)  //QUESTION 2???????? 
-    // pthread_t deadlock;
-    //  while(1){
-    //     pthread_create(&deadlock,NULL,deadlock_checker,NULL);
-    //     sleep(10);
-    // }
-    return 0;
-
-}
+ 	   printf ("Printing 2D Array:\n");
+  	   for (int r = 0; r < numProcesses; r++) {
+  	     for (int c = 0; c < numResources; c++) {
+  	         printf("%.2d ", max[r][c]);
+  	     }
+  	     printf("\n");
+  	 
+  	   }
+		
+  	   return 0;
+ 	 }
