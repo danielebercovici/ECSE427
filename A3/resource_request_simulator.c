@@ -5,21 +5,24 @@
 #include <unistd.h>
 
 
-
+//Declare variables
 int *avail; //Available resources
 int **max;//Maxij
 int numProcesses, numResources;
+int **need; //how many resources each process needs to finish
+int **hold; //how many resources each process is holding
+
 /*
 Simulates resource requests by processes 
 */
 void request_simulator(int pr_id, int* request_vector){
 //call to get a request vector REQj
 //requests ij instances of each resource j where i is randomly selected as a value between 0 and amount of remaining resources
-for(int i =0; i<request_vector;i++){
 
+for(int j =0; j<numResources;j++){
+    //rand() % (max_number + 1 - minimum_number) + minimum_number
+    request_vector[j]=rand()%(need[pr_id][j]+1);
 }
-//check if able to grant safe state
-//if so grant
 }
 
 /*
@@ -28,6 +31,10 @@ Implementation of isSafe() as described in the slides
 int isSafe(){
     //initalize work
     int *work;
+    work = malloc(numResources * sizeof(int));
+    for(int j =0;j<numResources;j++){
+
+    }
     bool *finish;
     int isSafe = 0;
     return isSafe;
@@ -39,13 +46,44 @@ returns 1 if safe allocation 0 if not safe
 */
 int bankers_algorithm(int pr_id, int* request_vector){
 //deadlock avoidance bankers algo
-//follow class slides
 
-//Holdij initialized to 0, how many resources each process is holding
-//Needij how many resources each process needs to finish needij = maxij-holdij
-//REQj request vector of resouces "random value between 0 and the aount of resources needed to reminate"
+for(int i = 0; i<numProcesses;i++){
+    for(int j =0; j<numResources;j++){
+        if(request_vector[j]>need[i][j]){
+            //impossible
+            exit(1);
+        }
+        else{
+            //check if request amount is available
+            for(int j=0;j<numResources;j++){
+                if(request_vector[j]>avail[j]){
+                    //must wait --------------------------------------------- return 0;??
+                    
+                    bankers_algorithm(pr_id,request_vector);
+                }
+            }
+            //provisional allocation
+            for(int j=0;j<numResources;j++){
+                avail[j]=avail[j]-request_vector[j];
+            }
+            for(int i = 0; i<numProcesses;i++){
+                for(int j =0; j<numResources;j++){
+                    hold[i][j]=hold[i][j]+request_vector[j];
+                    need[i][j]=need[i][j]-request_vector[j];
+                }
+            }
+            if(isSafe()){ //grant
+                return 1;
+            }
+            else{//cancel allocation------------------------ 
+                //must wait
+                bankers_algorithm(pr_id,request_vector);
+            }
+
+        }
+    }
+}
     return 0;
-
 }
 
 /*
@@ -91,7 +129,6 @@ int main()
 {
 
     //Initialize all inputs to banker's algorithm
-    
     printf("Enter the number of processes : ");
     scanf("%d", &numProcesses);
 
@@ -116,6 +153,23 @@ int main()
             scanf("%d", &max[i][j]);
         }  
     }
+    //initialize hold and need
+    hold=(int **)malloc(sizeof(int *) * numProcesses);
+    for (int k = 0; k < numProcesses; k++) {
+        hold[k] = (int *) malloc(sizeof(int) * numResources);
+    }
+    need=(int **)malloc(sizeof(int *) * numProcesses);
+    for (int k = 0; k < numProcesses; k++) {
+        need[k] = (int *) malloc(sizeof(int) * numResources);
+    }
+    for (int i = 0; i < numProcesses; i++){
+        for(int j=0; j< numResources; j++){
+            hold[i][j]=0;
+            need[i][j]=max[i][j];
+        }  
+    }
+
+
     
     //create threads simulating processes (process_simulator)
     int *p_ids[numProcesses];
