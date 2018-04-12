@@ -91,7 +91,7 @@ for(int i = 0; i<numProcesses;i++){
                 for(int j =0; j<numResources;j++){
                     hold[i][j]=hold[i][j]+request_vector[j];
                     need[i][j]=need[i][j]-request_vector[j];
-                    printf("process [%d], resource [%d] new NEED %d \n",i,j, need[i][j]);
+                    //printf("process [%d], resource [%d] new NEED %d \n",i,j, need[i][j]);
                 }
             }
             if(isSafe()){ //grant
