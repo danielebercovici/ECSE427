@@ -19,9 +19,9 @@ void request_simulator(int pr_id, int* request_vector){
 //call to get a request vector REQj
     for(int j =0; j<numResources;j++){
         //rand() % (max_number + 1 - minimum_number) + minimum_number
-        printf("[%d] NEED: %d \n",pr_id, need[pr_id][j]);
+        printf("process [%d] resource [%d] NEED: %d \n",pr_id,j, need[pr_id][j]);
         request_vector[j]=rand()%(need[pr_id][j]+1);
-        printf("[%d] REQUEST: %d \n",pr_id, request_vector[j]);
+        printf("process [%d] resource [%d] REQUEST: %d \n",pr_id, j,request_vector[j]);
     }
 }
 
@@ -91,7 +91,7 @@ for(int i = 0; i<numProcesses;i++){
                 for(int j =0; j<numResources;j++){
                     hold[i][j]=hold[i][j]+request_vector[j];
                     need[i][j]=need[i][j]-request_vector[j];
-                    printf("process [%d], resource [%d] new need %d \n",i,j, need[i][j]);
+                    printf("process [%d], resource [%d] new NEED %d \n",i,j, need[i][j]);
                 }
             }
             if(isSafe()){ //grant
