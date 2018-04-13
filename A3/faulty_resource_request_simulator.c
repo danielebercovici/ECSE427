@@ -170,8 +170,6 @@ void* process_simulator(void* pr_id){
 Simulates a fault occuring on the system.
 */
 void* fault_simulator(){
-    //thread running in background removing resources with probability described in the spec
-    //rand() % (max_number + 1 - minimum_number) + minimum_number --------------------------------how can it be 50% probability and uniform????
     while(1){
         printf("Simulating fault \n");
         int resource = rand()%((numResources-1)+1); 
@@ -189,21 +187,31 @@ Checks for deadlock
 */
 void* deadlock_checker(){
     while(1){
-        bool deadlock = false;
-        //periodically run this
-        //check if deadlock has occured due to resource fault
-        //process needs checked against current available resource in system
+        //initialize deadlock
+        bool isdeadlock=true;
+
+        bool *deadlock;
+        deadlock = malloc(numResources * sizeof(int));
+        for(int i = 0; i<numProcesses;i++){
+            deadlock[i]=false;
+        }
+        //check for deadlock
         pthread_mutex_lock(&mutex);
         for(int i = 0; i<numProcesses;i++){
             for(int j =0; j<numResources;j++){
-                if(need[i][j]>avail[j]){}
-                else{
-                    deadlock=true;
+                if(need[i][j]>avail[j]){
+                    deadlock[i]=true;
                 }
             }
         }
+        for(int i = 0; i<numProcesses;i++){
+            if(deadlock[i]==false){
+                isdeadlock=false;
+            }
+        }
+
         pthread_mutex_unlock(&mutex);
-        if(deadlock){
+        if(isdeadlock){
             printf("Deadlock will occur as process request more resources, exiting \n");
             exit(1);
         }
@@ -285,13 +293,13 @@ int main()
 
   //create a thread that takes away resources from the available pool (fault_simulator) 
     pthread_t faulty;
-    //pthread_create(&faulty,NULL,fault_simulator,NULL);
+    pthread_create(&faulty,NULL,fault_simulator,NULL);
  
     
 
     //create a thread to check for deadlock (deadlock_checker)  
     pthread_t deadlock;
-    //pthread_create(&deadlock,NULL,deadlock_checker,NULL);
+    pthread_create(&deadlock,NULL,deadlock_checker,NULL);
 
     
     pthread_exit(NULL);
