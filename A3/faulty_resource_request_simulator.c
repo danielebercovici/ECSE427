@@ -52,7 +52,7 @@ int isSafe(){
     for(int i = 0; i<numProcesses;i++){
         for(int j =0; j<numResources;j++){
             if(finish[i]==false && need[i][j]<=work[j]){
-                work[j]=work[j]-hold[i][j];
+                work[j]=work[j]+hold[i][j];
                 finish[i]=true;
             }
         }

@@ -14,7 +14,7 @@ int **need; //how many resources each process needs to finish
 int **hold; //how many resources each process is holding
 
 //sem_t mutex;
-pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;;
+pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
 
 /*
 Simulates resource requests by processes 
@@ -45,6 +45,7 @@ int isSafe(){
     for(int j =0;j<numResources;j++){
         work[j]=avail[j];
     }
+    //initalize finish
     bool *finish;
     finish = malloc(numProcesses * sizeof(int));
     for(int i=0;i<numProcesses;i++){
@@ -55,7 +56,7 @@ int isSafe(){
     for(int i = 0; i<numProcesses;i++){
         for(int j =0; j<numResources;j++){
             if(finish[i]==false && need[i][j]<=work[j]){
-                work[j]=work[j]-hold[i][j];
+                work[j]=work[j]+hold[i][j];
                 finish[i]=true;
             }
         }
@@ -65,6 +66,7 @@ int isSafe(){
         if(finish[i] == true){}
         else{
             isSafe=0; //not safe
+            return isSafe;
         }  
     }
     return isSafe;
@@ -149,12 +151,9 @@ void* process_simulator(void* pr_id){
                 pthread_mutex_unlock(&mutex);
             }
         } 
-
-        //printf("I allocated and i get here \n");
        
         bool remaining = false;
         for(int j=0;j<numResources;j++){ 
-            //printf("the NEED IS THIS:::::: %d\n",need[(int)pr_id][j]);
             if(need[(int)pr_id][j]>0){//has remaining requests
                 remaining=true;
             }
@@ -173,59 +172,16 @@ void* process_simulator(void* pr_id){
         sleep(3);
 
     }
-    //printf("TERMINATING\n");
-    //terminate process ----------------------------------------_---------
-    
+
+    //terminate process
     pthread_join(pr_id,NULL);
     //exit(1);
 
 }
 
-/*
-Simulates a fault occuring on the system.
-*/
-void* fault_simulator(){
-    //thread running in background removing resources with probability described in the spec
-    //rand() % (max_number + 1 - minimum_number) + minimum_number --------------------------------how can it be 50% probability and uniform????
-    while(1){
-        int resource = rand()%((numResources-1)+1); //check this
-        avail[resource]-=1;
-        sleep(10);
-    }
-
-    
-}
-
-/*
-Checks for deadlock
-*/
-void* deadlock_checker(){
-    while(1){
-        bool deadlock = false;
-        //periodically run this
-        //check if deadlock has occured due to resource fault
-        //process needs checked against current available resource in system
-        for(int i = 0; i<numProcesses;i++){
-            for(int j =0; j<numResources;j++){
-                if(need[i][j]>avail[j]){}
-                else{
-                    deadlock=true;
-                }
-            }
-        }
-        if(deadlock){
-            printf("Deadlock will occur as process request more resources, exiting");
-            exit(1);
-        }
-        sleep(10);
-    }
-    
-
-}
 
 int main()
 {
-    //sem_init(&mutex, 0, 1);
 
     //Initialize all inputs to banker's algorithm
     printf("Enter number of processes : ");
@@ -294,17 +250,6 @@ int main()
         pthread_create(&p_id[j], NULL, process_simulator,p_ids[j]);
         
     }
-
-  //create a thread that takes away resources from the available pool (fault_simulator) 
-    pthread_t faulty;
-    //pthread_create(&faulty,NULL,fault_simulator,NULL);
- 
-    
-
-    //create a thread to check for deadlock (deadlock_checker)  
-    pthread_t deadlock;
-    //pthread_create(&deadlock,NULL,deadlock_checker,NULL);
-
     
     pthread_exit(NULL);
     return 0;
