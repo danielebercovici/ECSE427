@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <semaphore.h>
 
 
 //Declare variables
@@ -11,6 +12,8 @@ int **max;//Maxij
 int numProcesses, numResources;
 int **need; //how many resources each process needs to finish
 int **hold; //how many resources each process is holding
+
+sem_t mutex;
 
 /*
 Simulates resource requests by processes 
@@ -78,9 +81,7 @@ for(int i = 0; i<numProcesses;i++){
             //check if request amount is available
             for(int j=0;j<numResources;j++){
                 if(request_vector[j]>avail[j]){
-                    //must wait --------------------------------------------- return 0;??
                     return 0;
-                    //bankers_algorithm(pr_id,request_vector);
                 }
             }
             //provisional allocation
@@ -91,13 +92,12 @@ for(int i = 0; i<numProcesses;i++){
                 for(int j =0; j<numResources;j++){
                     hold[i][j]=hold[i][j]+request_vector[j];
                     need[i][j]=need[i][j]-request_vector[j];
-                    //printf("process [%d], resource [%d] new NEED %d \n",i,j, need[i][j]);
                 }
             }
             if(isSafe()){ //grant
                 printf("GRANTED \n");
-                sleep(3); //---------------- is this here???, WHERE DO WE RELIQUISH RESOURCES?
-                //reliquish??
+                sleep(3); 
+                //reliquish --------------------------------------------------_WHERE TO RELINQUISH?
                 for(int i = 0; i<numProcesses;i++){
                     for(int j =0; j<numResources;j++){
                         avail[j]=avail[j]+hold[i][j];
@@ -106,7 +106,7 @@ for(int i = 0; i<numProcesses;i++){
                 }
                 return 1;
             }
-            else{//cancel allocation------------------------ 
+            else{//cancel allocation
                 for(int j=0;j<numResources;j++){
                     avail[j]=avail[j]+request_vector[j];
                 }
@@ -117,9 +117,6 @@ for(int i = 0; i<numProcesses;i++){
                         printf("Cancel allocation \n");
                     }
                 }
-                //must wait
-                //block process until another process finishes --------------------
-                //bankers_algorithm(pr_id,request_vector);
                 return 0;
             }
 
@@ -136,84 +133,82 @@ void* process_simulator(void* pr_id){
 
     //thread simulating process
     //gets random request vector
-    int *request_vector;
-    request_vector = malloc(numResources * sizeof(int));
-    request_simulator((int)pr_id,request_vector);
-    //calls banker algo
-    bankers_algorithm((int)pr_id,request_vector); //--------------big while(bankers){} ???? or recursive bankers?
-    //call bankers to see if allocation of request vector is safe or not
-    //if not safe: process continuously calls bankers unitl allocation is safe
-    //if safe: check if process can termiante and if so, free all resources held by process. If you cant terminate, then sleep for 3 seconds and make another request
-    //only gets resource if allocation is safe
-    //releases resources if it gets its needs met
+    
+    while(1){
+        int *request_vector;
+        request_vector = malloc(numResources * sizeof(int));
+        request_simulator((int)pr_id,request_vector);
 
-    //check for remaining requests
-    bool remaining;
-    for(int j=0;j<numResources;j++){ 
-        if(need[(int)pr_id][j]!=0){//remaining requests
-            remaining=true;
-        }
-    }
-    while(remaining){
-        remaining=false;
-        request_simulator((int)pr_id,request_vector); 
-        bankers_algorithm((int)pr_id,request_vector);
+        //calls banker algo
+        sem_wait(&mutex);
+        while(!bankers_algorithm((int)pr_id,request_vector)){} 
+        sem_post(&mutex);
+        
+        sleep(3);
+        bool remaining = false;
         for(int j=0;j<numResources;j++){ 
             if(need[(int)pr_id][j]!=0){//remaining requests
                 remaining=true;
             }
         }
-        sleep(3);
-    }
-    // //check for remaining requests
-    // for(int j=0;j<numResources;j++){
-        
-    //     if(need[(int)pr_id][j]!=0){//remaining requests
-    //         sleep(3);
-    //         request_simulator((int)pr_id,request_vector); //----------------is this suppose to be here? call bankers again? like while still remaining repeat???
-    //         bankers_algorithm((int)pr_id,request_vector);
-    //     }
-    // }
+        if(!remaining){
+            break;
+        }
 
-    //terminate process -------------------------free all resources here???
+    }
+    printf("TERMINATING\n");
+    //terminate process ----------------------------------------
     pthread_join(pr_id,NULL);
+    exit(1);
 
 }
 
 /*
 Simulates a fault occuring on the system.
 */
-void* fault_simulator(void* pr_id){
+void* fault_simulator(){
     //thread running in background removing resources with probability described in the spec
     //rand() % (max_number + 1 - minimum_number) + minimum_number --------------------------------how can it be 50% probability and uniform????
-    int resource = rand()%((numResources-1)+1);
-    avail[resource]-=1;
+    while(1){
+        int resource = rand()%((numResources-1)+1);
+        avail[resource]-=1;
+        sleep(10);
+
+    }
+
+    
 }
 
 /*
 Checks for deadlock
 */
 void* deadlock_checker(){
-    bool deadlock = false;
-    //periodically run this
-    //check if deadlock has occured due to resource fault
-    //process needs checked against current available resource in system
-    for(int i = 0; i<numProcesses;i++){
-        for(int j =0; j<numResources;j++){
-            if(need[i][j]>avail[j]){}
-            else{
-                deadlock=true;
+    while(1){
+        bool deadlock = false;
+        sleep(10);
+        //periodically run this
+        //check if deadlock has occured due to resource fault
+        //process needs checked against current available resource in system
+        for(int i = 0; i<numProcesses;i++){
+            for(int j =0; j<numResources;j++){
+                if(need[i][j]>avail[j]){}
+                else{
+                    deadlock=true;
+                }
             }
         }
+        if(deadlock){
+            printf("Deadlock will occur as process request more resources, exiting");
+            exit(1);//this how you exit???________________________________________________________
+        }
     }
-    if(deadlock){
-        printf("Deadlock will occur as process request more resources, exiting");
-        exit(1);//this how you exit???
-    }
+    
+
 }
 
 int main()
 {
+    sem_init(&mutex, 0, 1);
 
     //Initialize all inputs to banker's algorithm
     printf("Enter the number of processes : ");
@@ -265,22 +260,20 @@ int main()
         p_ids[j] = temp;
         printf("process %d created\n",j);
         pthread_create(&p_id[j], NULL, process_simulator,p_ids[j]);
+        
     }
 
-    //create a thread that takes away resources from the available pool (fault_simulator)  ---------------------------why does adding this? make scanf infinite????
-    // pthread_t faulty;
-    // while(1){
-    //     //pthread_create(&faulty,NULL,fault_simulator,pr_id);
-    //     sleep(10);
-    // }
+  //create a thread that takes away resources from the available pool (fault_simulator)  ---------------------------why does adding this? make scanf infinite????
+    pthread_t faulty;
+    pthread_create(&faulty,NULL,fault_simulator,NULL);
+ 
     
 
-    // //create a thread to check for deadlock (deadlock_checker)  
-    // pthread_t deadlock;
-    //  while(1){
-    //     pthread_create(&deadlock,NULL,deadlock_checker,NULL);
-    //     sleep(10);
-    // }
+    //create a thread to check for deadlock (deadlock_checker)  
+    pthread_t deadlock;
+    pthread_create(&deadlock,NULL,deadlock_checker,NULL);
+
+    
     pthread_exit(NULL);
     return 0;
 
