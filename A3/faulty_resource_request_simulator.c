@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include <semaphore.h>
+
 
 
 //Declare variables
@@ -13,17 +13,14 @@ int numProcesses, numResources;
 int **need; //how many resources each process needs to finish
 int **hold; //how many resources each process is holding
 
-//sem_t mutex;
 pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;;
 
 /*
 Simulates resource requests by processes 
 */
 void request_simulator(int pr_id, int* request_vector){
-//call to get a request vector REQj
     printf("requesting resources for process %d \n",pr_id); 
     for(int j =0; j<numResources;j++){
-        //rand() % (max_number + 1 - minimum_number) + minimum_number
         request_vector[j]=rand()%(need[pr_id][j]+1); 
     }
     printf("The Resource vector requested array is: \n");
@@ -75,8 +72,6 @@ Implementation of Bankers Algorithm as described in the slides
 returns 1 if safe allocation 0 if not safe
 */
 int bankers_algorithm(int pr_id, int* request_vector){
-//deadlock avoidance bankers algo
-
 for(int i = 0; i<numProcesses;i++){
     for(int j =0; j<numResources;j++){
         if(request_vector[j]>need[i][j]){
@@ -130,10 +125,6 @@ for(int i = 0; i<numProcesses;i++){
 Simulates processes running on the system.
 */
 void* process_simulator(void* pr_id){
-
-    //thread simulating process
-    //gets random request vector
-    
     while(1){
         int *request_vector;
         request_vector = malloc(numResources * sizeof(int));
@@ -149,12 +140,9 @@ void* process_simulator(void* pr_id){
                 pthread_mutex_unlock(&mutex);
             }
         } 
-
-        //printf("I allocated and i get here \n");
        
         bool remaining = false;
         for(int j=0;j<numResources;j++){ 
-            //printf("the NEED IS THIS:::::: %d\n",need[(int)pr_id][j]);
             if(need[(int)pr_id][j]>0){//has remaining requests
                 remaining=true;
             }
@@ -173,11 +161,8 @@ void* process_simulator(void* pr_id){
         sleep(3);
 
     }
-    //printf("TERMINATING\n");
-    //terminate process ----------------------------------------_---------
-    
+    //terminate process 
     pthread_join(pr_id,NULL);
-    //exit(1);
 
 }
 
@@ -188,8 +173,11 @@ void* fault_simulator(){
     //thread running in background removing resources with probability described in the spec
     //rand() % (max_number + 1 - minimum_number) + minimum_number --------------------------------how can it be 50% probability and uniform????
     while(1){
-        int resource = rand()%((numResources-1)+1); //check this
+        printf("Simulating fault \n");
+        int resource = rand()%((numResources-1)+1); 
+        pthread_mutex_lock(&mutex);
         avail[resource]-=1;
+        pthread_mutex_unlock(&mutex);
         sleep(10);
     }
 
@@ -205,6 +193,7 @@ void* deadlock_checker(){
         //periodically run this
         //check if deadlock has occured due to resource fault
         //process needs checked against current available resource in system
+        pthread_mutex_lock(&mutex);
         for(int i = 0; i<numProcesses;i++){
             for(int j =0; j<numResources;j++){
                 if(need[i][j]>avail[j]){}
@@ -213,8 +202,9 @@ void* deadlock_checker(){
                 }
             }
         }
+        pthread_mutex_unlock(&mutex);
         if(deadlock){
-            printf("Deadlock will occur as process request more resources, exiting");
+            printf("Deadlock will occur as process request more resources, exiting \n");
             exit(1);
         }
         sleep(10);
@@ -225,8 +215,6 @@ void* deadlock_checker(){
 
 int main()
 {
-    //sem_init(&mutex, 0, 1);
-
     //Initialize all inputs to banker's algorithm
     printf("Enter number of processes : ");
     scanf("%d", &numProcesses);
@@ -234,7 +222,7 @@ int main()
     printf("Enter number of resources : ");
     scanf("%d", &numResources);
 
-    //Avail, be careful shared mem
+    //Avail
     avail = malloc(numResources * sizeof(int));
     for (int i = 0; i < numResources; i++){
         printf("Enter available resource : ");
