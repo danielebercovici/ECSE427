@@ -80,9 +80,6 @@ void accessSSTF(int *request, int numRequest)
 void accessSCAN(int *request, int numRequest)
 {
 
-    //int next = request[0]; //the next value in the order
-    //int nextvalue = START-request[0]; //value of the difference of the next one
-
     int *newRequest = malloc(numRequest * sizeof(int)); //new order
     int newCnt=numRequest;
     //sort
