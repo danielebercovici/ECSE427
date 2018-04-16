@@ -13,7 +13,7 @@ int numProcesses, numResources;
 int **need; //how many resources each process needs to finish
 int **hold; //how many resources each process is holding
 
-pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;;
+pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
 
 /*
 Simulates resource requests by processes 
@@ -162,7 +162,7 @@ void* process_simulator(void* pr_id){
 
     }
     //terminate process 
-    pthread_join(pr_id,NULL);
+    return NULL;
 
 }
 

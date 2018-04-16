@@ -174,9 +174,7 @@ void* process_simulator(void* pr_id){
     }
 
     //terminate process
-    pthread_join(pr_id,NULL);
-    //exit(1);
-
+    return NULL;
 }
 
 
@@ -213,6 +211,7 @@ int main()
     for (int k = 0; k < numProcesses; k++) {
         hold[k] = (int *) malloc(sizeof(int) * numResources);
     }
+    
     need=(int **)malloc(sizeof(int *) * numProcesses);
     for (int k = 0; k < numProcesses; k++) {
         need[k] = (int *) malloc(sizeof(int) * numResources);
